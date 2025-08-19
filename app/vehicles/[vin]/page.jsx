@@ -1,8 +1,9 @@
 // app/vehicles/[vin]/page.jsx
 import Image from "next/image";
+import { headers } from "next/headers";
 
+// --- demo data source (replace with your DB later) ---
 async function getVehicleByVIN(vin) {
-  // TODO: replace with your database later
   return {
     vin,
     year: 2019,
@@ -21,13 +22,18 @@ async function getVehicleByVIN(vin) {
   };
 }
 
+// --- CARFAX link helper ---
 function carfaxUrl(vin) {
-  // Replace later with your real CARFAX dealer VIN link
+  // replace later with your real dealer VIN link
   return `/api/carfax-link?vin=${encodeURIComponent(vin)}`;
 }
 
 export default async function VehiclePage({ params }) {
   const v = await getVehicleByVIN(params.vin);
+
+  // host-aware base so JSON-LD points to the domain the user is on
+  const host = headers().get("host") || "www.driveagaincars.com";
+  const base = `https://${host}`;
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -47,24 +53,27 @@ export default async function VehiclePage({ params }) {
       price: String(v.price),
       priceCurrency: "USD",
       availability: "https://schema.org/InStock",
-      url: `https://driveagaincars.com/vehicles/${v.vin}`,
+      url: `${base}/vehicles/${v.vin}`, // host-aware URL
     },
   };
 
   return (
     <main className="max-w-6xl mx-auto p-4 md:p-8">
       {/* SEO structured data */}
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
       <div className="grid md:grid-cols-2 gap-6">
         {/* Gallery */}
         <div className="space-y-3">
-          <div className="relative rounded-2xl overflow-hidden shadow" style={{aspectRatio:'16/9'}}>
+          <div className="relative rounded-2xl overflow-hidden shadow" style={{ aspectRatio: "16/9" }}>
             <Image src={v.photos[0]} alt={`${v.make} ${v.model}`} fill className="object-cover" />
           </div>
           <div className="grid grid-cols-3 gap-3">
             {v.photos.slice(1).map((src, i) => (
-              <div key={i} className="relative rounded-xl overflow-hidden shadow" style={{aspectRatio:'16/9'}}>
+              <div key={i} className="relative rounded-xl overflow-hidden shadow" style={{ aspectRatio: "16/9" }}>
                 <Image src={src} alt={`${v.make} ${v.model} ${i + 2}`} fill className="object-cover" />
               </div>
             ))}
